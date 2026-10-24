@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SALON | Hair, Skin, Nails &amp; Bridal</title>
+<meta name="description" content="SALON is a full-service beauty salon offering hair, color, skin, nails, makeup and bridal packages. Book your appointment online.">
+<meta name="theme-color" content="#1b1220">
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add("js")</script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body class="lock">
+
+<!-- INTRO ANIMATION -->
+<div id="intro" aria-hidden="true">
+  <div class="intro-glow"></div>
+  <div class="intro-center">
+    <!-- LOGO ANIMATION: scissor blades fly in, snip, sparkle -->
+    <svg id="logo-animation" class="intro-logo" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="ia" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#b9aab8"/></linearGradient>
+        <linearGradient id="ib" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9dfe8"/><stop offset="1" stop-color="#6f5a70"/></linearGradient>
+      </defs>
+      <g class="blade blade-a"><path d="M20 8 L44 8 L100 84 L84 84 Z" fill="url(#ia)"/><circle cx="90" cy="98" r="13" stroke="url(#ia)" stroke-width="6"/></g>
+      <g class="blade blade-b"><path d="M100 8 L76 8 L20 84 L36 84 Z" fill="url(#ib)"/><circle cx="30" cy="98" r="13" stroke="url(#ib)" stroke-width="6"/></g>
+      <path class="spark" d="M60 28 L63.5 40.5 L76 44 L63.5 47.5 L60 60 L56.5 47.5 L44 44 L56.5 40.5Z" fill="#fff"/>
+    </svg>
+    <div class="intro-name">SALON</div>
+  </div>
+  <div class="intro-count" id="count">001</div>
+</div>
+
+<header class="nav" id="nav">
+  <div class="wrap nav-in">
+    <a href="#top" class="brand" aria-label="SALON home"><img src="assets/logo.svg" alt="">SALON</a>
+    <button class="burger" id="burger" aria-label="Open menu" aria-expanded="false" aria-controls="menu"><span></span></button>
+    <nav class="menu" id="menu" aria-label="Main">
+      <a href="#services">Services</a>
+      <a href="#packages">Packages</a>
+      <a href="#gallery">Gallery</a>
+      <a href="#team">Team</a>
+      <a href="#contact">Contact</a>
+      <a href="#booking" class="btn sm">Book now</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <h1 class="hz" style="--d:.05s">Look like you. Only more so.</h1>
+        <p class="hz" style="--d:.2s">Hair, color, skin, nails and bridal artistry from a team that listens first. Choose a service or a package and reserve your chair in under two minutes.</p>
+        <div class="hero-cta hz" style="--d:.35s">
+          <a href="#booking" class="btn">Book an appointment</a>
+          <a href="#packages" class="btn ghost">See packages</a>
+        </div>
+        <div class="hero-stats hz" style="--d:.5s">
+          <div><b>12+</b><span>Years in business</span></div>
+          <div><b>8,500</b><span>Happy clients</span></div>
+          <div><b>4.9/5</b><span>Average rating</span></div>
+        </div>
+      </div>
+      <div class="hero-art hz" style="--d:.2s" role="img" aria-label="SALON emblem: crossed scissors">
+        <!-- Replace with a real photo: set background-image on .hero-art or add an <img> -->
+        <img class="mark" src="assets/logo.svg" alt="">
+        <div class="badge">Walk-ins welcome when chairs are free. Booking guarantees yours.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="services">
+    <div class="wrap">
+      <div class="sec-head"><h2>Services</h2><p>Every service starts with a short consultation, so the result fits your hair, skin and routine.</p></div>
+      <div class="tabs" role="tablist" id="tabs" aria-label="Service categories"></div>
+      <div class="svc-list" id="svcList"></div>
+    </div>
+  </section>
+
+  <section id="packages" class="dark">
+    <div class="wrap">
+      <div class="sec-head"><h2>Packages</h2><p>Bundled treatments at a better price. Pick one and we'll pre-fill your booking.</p></div>
+      <div class="pk-grid" id="pkGrid"></div>
+    </div>
+  </section>
+
+  <section id="gallery">
+    <div class="wrap">
+      <div class="sec-head"><h2>Our work</h2><p>A look at recent color, cuts, skin and bridal work.</p></div>
+      <!-- Replace the images in assets/gallery/ with your own photos (keep the file names or edit the src) -->
+      <div class="gal">
+        <div data-l="Balayage"><img src="assets/gallery/balayage.svg" alt="Balayage hair color" loading="lazy"></div>
+        <div data-l="Skin glow"><img src="assets/gallery/skin.svg" alt="Glow facial serum" loading="lazy"></div>
+        <div data-l="Manicure"><img src="assets/gallery/manicure.svg" alt="Colorful manicure" loading="lazy"></div>
+        <div data-l="Precision cut"><img src="assets/gallery/cut.svg" alt="Scissors and comb" loading="lazy"></div>
+        <div data-l="Bridal updo"><img src="assets/gallery/bridal.svg" alt="Bridal updo with veil and flowers" loading="lazy"></div>
+        <div data-l="Gloss color"><img src="assets/gallery/color.svg" alt="Hair color swatches" loading="lazy"></div>
+        <div data-l="Makeup"><img src="assets/gallery/makeup.svg" alt="Lipstick, palette and brush" loading="lazy"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="team" class="dark">
+    <div class="wrap">
+      <div class="sec-head"><h2>Meet the team</h2><p>Licensed professionals who keep learning the latest techniques.</p></div>
+      <div class="team">
+        <div class="mem"><div class="ph">A</div><h4>Amelia Hart</h4><p>Creative director, color</p></div>
+        <div class="mem"><div class="ph">J</div><h4>Jordan Reyes</h4><p>Senior stylist, cuts</p></div>
+        <div class="mem"><div class="ph">S</div><h4>Sophia Lane</h4><p>Esthetician, skin</p></div>
+        <div class="mem"><div class="ph">M</div><h4>Maya Brooks</h4><p>Bridal and makeup artist</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="reviews">
+    <div class="wrap">
+      <div class="sec-head"><h2>Kind words</h2></div>
+      <div class="rev">
+        <blockquote><div class="st">★★★★★</div>The best balayage I've ever had. Amelia matched the tone exactly and it grew out beautifully.<cite>Emily R.</cite></blockquote>
+        <blockquote><div class="st">★★★★★</div>Booked the bridal package for my wedding. Calm, on time and I felt amazing in every photo.<cite>Danielle K.</cite></blockquote>
+        <blockquote><div class="st">★★★★★</div>Easy online booking, no waiting, and a facial that actually fixed my dry skin.<cite>Marcus T.</cite></blockquote>
+      </div>
+    </div>
+  </section>
+
+  <section id="booking" class="dark">
+    <div class="wrap">
+      <div class="sec-head"><h2>Book online</h2><p>Choose a package or services, pick a time, and we'll confirm by email.</p></div>
+      <div class="book-wrap">
+        <div class="panel" style="color:var(--ink)">
+          <form id="bookForm" novalidate>
+            <div class="step"><span class="lbl">1. Choose a package</span><div class="choice" id="bPk"></div></div>
+            <div class="step"><span class="lbl">Or add individual services</span><div class="choice" id="bSvc"></div></div>
+            <div class="step"><span class="lbl">2. Stylist</span><div class="choice" id="bSt"></div></div>
+            <div class="step">
+              <span class="lbl">3. Date and time</span>
+              <input type="date" id="date" aria-label="Appointment date" required>
+              <div class="err" id="dateNote"></div>
+              <div class="choice times" id="bTime" style="margin-top:10px"></div>
+            </div>
+            <div class="step">
+              <span class="lbl">4. Your details</span>
+              <div class="field">
+                <input id="name" placeholder="Full name" autocomplete="name" required>
+                <input id="phone" type="tel" placeholder="Phone" autocomplete="tel" required>
+                <input id="email" type="email" class="full" placeholder="Email" autocomplete="email" required>
+                <textarea id="notes" class="full" placeholder="Notes (allergies, inspiration, special requests)"></textarea>
+              </div>
+            </div>
+            <div class="err" id="err" role="alert"></div>
+            <button class="btn" type="submit" style="margin-top:8px">Confirm booking</button>
+          </form>
+          <div class="ok" id="ok" tabindex="-1">
+            <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="#1b1220" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></div>
+            <h3 style="font-size:1.8rem">You're booked</h3>
+            <p id="okMsg" style="margin:12px 0 22px;color:#5d5163"></p>
+            <button class="btn dk" id="again">Make another booking</button>
+          </div>
+        </div>
+        <aside class="summary" aria-live="polite">
+          <h3>Your appointment</h3>
+          <dl>
+            <dt>Service</dt><dd id="sSvc">None selected</dd>
+            <dt>Stylist</dt><dd id="sSt">Any available</dd>
+            <dt>Date</dt><dd id="sDate">-</dd>
+            <dt>Time</dt><dd id="sTime">-</dd>
+            <dt>Duration</dt><dd id="sDur">-</dd>
+          </dl>
+          <div class="tot"><span>Total</span><b id="sTot">$0</b></div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section id="contact" class="dark" style="padding-top:0">
+    <div class="wrap contact">
+      <div><h4>Visit us</h4><p>245 Madison Avenue<br>New York, NY 10016</p></div>
+      <div><h4>Call or email</h4><p><a href="tel:+12125550142">(212) 555-0142</a><br><a href="mailto:hello@salon.com">hello@salon.com</a></p></div>
+      <div><h4>Hours</h4><ul class="hours"><li><span>Mon - Fri</span><span>9am - 7pm</span></li><li><span>Saturday</span><span>9am - 6pm</span></li><li><span>Sunday</span><span>10am - 4pm</span></li></ul></div>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap"><span>&copy; <span id="yr"></span> SALON. All rights reserved.</span><span class="soc"><a href="#">Instagram</a><a href="#">Facebook</a><a href="#">TikTok</a></span></div></footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
