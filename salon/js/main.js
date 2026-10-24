@@ -32,6 +32,7 @@ const PACKAGES = [
   { id: 'p-hands', name: 'Hands & Feet', p: 105, m: 100, items: ['Gel manicure', 'Spa pedicure', 'Paraffin treat'], svc: ['gel', 'pedi'], save: 'Save $15' },
   { id: 'p-bride', name: 'Bridal Day', p: 480, m: 270, items: ['Bridal hair styling', 'Bridal makeup', 'Gel manicure', 'Trial session'], svc: ['blow', 'mu', 'gel'], save: 'Includes trial' }
 ];
+const PROMOS = { WELCOME10: 0.10 }; // add more codes here, e.g. SUMMER15: 0.15
 const STAFF = ['Any available', 'Amelia Hart', 'Jordan Reyes', 'Sophia Lane', 'Maya Brooks'];
 const ALL = Object.values(SERVICES).flat();
 const $ = (s, r = document) => r.querySelector(s);
@@ -40,7 +41,11 @@ const mins = m => (m >= 60 ? Math.floor(m / 60) + ' hr ' : '') + (m % 60 ? (m % 
 
 /* ========= INTRO + LOGO ANIMATION ========= */
 // The logo animation itself (blades flying in, snipping, sparkle) is CSS: see "LOGO ANIMATION" in style.css.
-function siteReady() { document.documentElement.classList.add('ready'); }
+let readyDone = false;
+function siteReady() {
+  document.documentElement.classList.add('ready');
+  if (!readyDone) { readyDone = true; document.dispatchEvent(new Event('salon:ready')); }
+}
 (function intro() {
   const el = $('#intro'), cnt = $('#count');
   const finish = () => { el.classList.add('done'); document.body.classList.remove('lock'); siteReady(); };
@@ -97,7 +102,7 @@ $('#pkGrid').innerHTML = PACKAGES.map(k => `
     <div class="pr">${money(k.p)}</div>
     <div class="dur">${mins(k.m)}${k.pop ? '' : ' · ' + k.save}</div>
     <ul>${k.items.map(i => `<li>${i}</li>`).join('')}</ul>
-    <button class="btn" data-pk="${k.id}">Book this package</button>
+    <div class="pk-actions"><button class="btn" data-pk="${k.id}">Book this package</button><button class="lnk" type="button" data-pd="${k.id}">View details</button></div>
   </article>`).join('');
 $('#pkGrid').addEventListener('click', e => {
   const b = e.target.closest('[data-pk]'); if (!b) return;
@@ -176,7 +181,10 @@ function updateSummary() {
   $('#sDate').textContent = state.date ? new Date(state.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : '-';
   $('#sTime').textContent = state.time || '-';
   $('#sDur').textContent = c.m ? mins(c.m) : '-';
-  $('#sTot').textContent = money(c.p);
+  const pct = state.promo ? (PROMOS[state.promo] || 0) : 0, off = Math.round(c.p * pct);
+  $('#sDiscRow').classList.toggle('on', off > 0);
+  if (off > 0) { $('#sDiscLbl').textContent = 'Discount (' + state.promo + ')'; $('#sDisc').textContent = '-' + money(off); }
+  $('#sTot').textContent = money(c.p - off);
 }
 
 $('#bookForm').addEventListener('submit', e => {
@@ -193,7 +201,7 @@ $('#bookForm').addEventListener('submit', e => {
   err.textContent = '';
 
   const ref = 'SLN-' + Math.random().toString(36).slice(2, 7).toUpperCase();
-  const booking = { ref, ...c, staff: state.staff, date: state.date, time: state.time, name, email, phone, notes: $('#notes').value.trim() };
+  const booking = { ref, ...c, staff: state.staff, promo: state.promo || '', date: state.date, time: state.time, name, email, phone, notes: $('#notes').value.trim() };
   // TODO: send `booking` to your backend / email service / booking API here.
   try { const all = JSON.parse(localStorage.getItem('salon-bookings') || '[]'); all.push(booking); localStorage.setItem('salon-bookings', JSON.stringify(all)); } catch (_) { }
 
@@ -201,6 +209,8 @@ $('#bookForm').addEventListener('submit', e => {
   const ok = $('#ok'); ok.style.display = 'block';
   $('#okMsg').textContent = `Thanks, ${name.split(' ')[0]}. Your ${c.names.join(', ')} appointment is set for ${$('#sDate').textContent} at ${state.time}. A confirmation will be sent to ${email}. Reference: ${ref}.`;
   ok.focus(); ok.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (window.salonConfetti) salonConfetti();
+  if (window.salonToast) salonToast('Booking confirmed. Reference ' + ref);
 });
 $('#again').addEventListener('click', () => {
   Object.assign(state, { pkg: null, svc: new Set(), staff: STAFF[0], date: '', time: '' });
@@ -227,7 +237,7 @@ renderTabs(); renderBooking(); updateSummary();
   dot.className = 'cur-dot'; ring.className = 'cur-ring';
   document.body.append(dot, ring); document.body.classList.add('has-cursor');
   let x = innerWidth / 2, y = innerHeight / 2, rx = x, ry = y;
-  const HOT = 'a,button,.chip,.tab,input,select,textarea,label,.pk,.svc,.mem,.gal > div,.rev blockquote,.hero-art,.summary';
+  const HOT = 'a,button,.chip,.tab,input,select,textarea,label,.pk,.svc,.mem,.gal > div,.rev blockquote,.hero-art,.summary,.ft,.qa';
   addEventListener('mousemove', e => {
     x = e.clientX; y = e.clientY; document.body.classList.add('cur-on');
     const hot = !!e.target.closest(HOT);
@@ -242,4 +252,276 @@ renderTabs(); renderBooking(); updateSummary();
     ring.style.transform = `translate3d(${rx}px,${ry}px,0)`;
     requestAnimationFrame(loop);
   })();
+})();
+
+
+/* ================================================================
+   POLISH: smart nav, progress, counters, glitter, tilt, popups...
+   ================================================================ */
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const finePointer = matchMedia('(hover: hover) and (pointer: fine)').matches;
+const onReady = fn => document.documentElement.classList.contains('ready') ? fn() : document.addEventListener('salon:ready', fn, { once: true });
+const safeStore = { get: k => { try { return sessionStorage.getItem(k); } catch (_) { return null; } }, set: (k, v) => { try { sessionStorage.setItem(k, v); } catch (_) { } } };
+
+/* ----- toasts ----- */
+function salonToast(msg) {
+  const box = $('#toasts'), t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg; box.append(t);
+  while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 450); }, 3200);
+}
+window.salonToast = salonToast;
+
+/* ----- confetti (booking success) ----- */
+window.salonConfetti = function () {
+  if (reduceMotion) return;
+  const c = document.createElement('canvas');
+  c.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:1900';
+  document.body.append(c);
+  const dpr = Math.min(devicePixelRatio || 1, 2); c.width = innerWidth * dpr; c.height = innerHeight * dpr;
+  const g = c.getContext('2d'); g.scale(dpr, dpr);
+  const cols = ['#c9a45c', '#e9c8c4', '#a8679a', '#f6e0b0', '#ffffff', '#e58fa6'];
+  const ps = Array.from({ length: 150 }, () => ({ x: innerWidth / 2 + (Math.random() - .5) * 200, y: innerHeight * .55, vx: (Math.random() - .5) * 16, vy: -Math.random() * 16 - 6, w: 6 + Math.random() * 7, h: 4 + Math.random() * 6, r: Math.random() * 6, vr: (Math.random() - .5) * .4, c: cols[(Math.random() * cols.length) | 0] }));
+  const t0 = performance.now();
+  (function f(t) {
+    const el = t - t0; g.clearRect(0, 0, innerWidth, innerHeight);
+    ps.forEach(p => { p.vy += .32; p.vx *= .992; p.x += p.vx; p.y += p.vy; p.r += p.vr; g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.c; g.globalAlpha = Math.max(0, 1 - el / 3200); g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); g.restore(); });
+    if (el < 3200) requestAnimationFrame(f); else c.remove();
+  })(t0);
+};
+
+/* ----- scroll effects: progress bar, smart nav, back-to-top, mobile CTA ----- */
+(function scrollFx() {
+  const bar = $('#progress'), navEl = $('#nav'), topBtn = $('#toTop'), cta = $('#mCta'), booking = $('#booking'), hero = $('#hero');
+  let last = scrollY, queued = false;
+  function update() {
+    queued = false;
+    const y = scrollY, h = document.documentElement.scrollHeight - innerHeight;
+    bar.style.transform = 'scaleX(' + (h > 0 ? Math.min(y / h, 1) : 0) + ')';
+    const d = y - last;
+    if (Math.abs(d) > 5) {
+      const hide = d > 0 && y > 500 && !$('#menu').classList.contains('open') && !navEl.matches(':focus-within');
+      navEl.classList.toggle('hide', hide); last = y;
+    }
+    if (y < 80) navEl.classList.remove('hide');
+    topBtn.classList.toggle('show', y > 700);
+    const bk = booking.getBoundingClientRect(), inBooking = bk.top < innerHeight * .6 && bk.bottom > 0;
+    cta.classList.toggle('show', y > hero.offsetHeight * .7 && !inBooking && !document.body.classList.contains('modal-open'));
+  }
+  addEventListener('scroll', () => { if (!queued) { queued = true; requestAnimationFrame(update); } }, { passive: true });
+  addEventListener('resize', update);
+  topBtn.addEventListener('click', () => scrollTo({ top: 0, behavior: 'smooth' }));
+  update();
+})();
+
+/* ----- active menu link while scrolling ----- */
+(function scrollSpy() {
+  const links = [...document.querySelectorAll('.menu a[href^="#"]:not(.btn)')];
+  const map = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+  if (!('IntersectionObserver' in window)) return;
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return;
+    links.forEach(l => l.classList.remove('active'));
+    const l = map.get(e.target.id); if (l) l.classList.add('active');
+  }), { rootMargin: '-45% 0px -50% 0px' });
+  map.forEach((_, id) => { const el = document.getElementById(id); if (el) io.observe(el); });
+})();
+
+/* ----- hero: count-up numbers, glitter, mouse-follow glow ----- */
+onReady(() => {
+  if (reduceMotion) return;
+  document.querySelectorAll('[data-count]').forEach(el => {
+    const end = +el.dataset.count, dec = +el.dataset.dec || 0, suf = el.dataset.suffix || '', comma = el.dataset.comma;
+    const t0 = performance.now() + 500, dur = 1800;
+    (function f(t) {
+      const p = Math.min(Math.max((t - t0) / dur, 0), 1), v = end * (1 - Math.pow(1 - p, 3));
+      el.textContent = (comma ? Math.round(v).toLocaleString('en-US') : v.toFixed(dec)) + suf;
+      if (p < 1) requestAnimationFrame(f);
+    })(performance.now());
+  });
+});
+(function glitter() {
+  const box = $('#sparkles'); if (!box || reduceMotion) return;
+  for (let i = 0; i < 18; i++) {
+    const el = document.createElement('i');
+    el.style.cssText = `left:${Math.random() * 100}%;top:${Math.random() * 100}%;--s:${6 + Math.random() * 12}px;--t:${3 + Math.random() * 4}s;--dl:${Math.random() * 6}s`;
+    box.append(el);
+  }
+})();
+(function heroGlow() {
+  const hero = $('#hero'); if (!finePointer || reduceMotion) return;
+  hero.addEventListener('mousemove', e => {
+    const r = hero.getBoundingClientRect();
+    hero.style.setProperty('--mx', ((e.clientX - r.left) / r.width - .5).toFixed(3));
+    hero.style.setProperty('--my', ((e.clientY - r.top) / r.height - .5).toFixed(3));
+  }, { passive: true });
+})();
+
+/* ----- marquee: repeat content so the loop is seamless on any screen ----- */
+(function marquee() {
+  const mq = $('#mq'); if (!mq) return;
+  const base = mq.innerHTML, w = mq.scrollWidth || 1, n = Math.max(1, Math.ceil(innerWidth / w));
+  mq.innerHTML = base.repeat(n * 2);
+})();
+
+/* ----- 3D tilt + glow on package cards, magnetic hero buttons ----- */
+(function tilt() {
+  if (!finePointer || reduceMotion) return;
+  document.querySelectorAll('.pk').forEach(el => {
+    el.addEventListener('mousemove', e => {
+      const r = el.getBoundingClientRect(), px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+      el.style.setProperty('--ry', ((px - .5) * 9).toFixed(2) + 'deg');
+      el.style.setProperty('--rx', (-(py - .5) * 9).toFixed(2) + 'deg');
+      el.style.setProperty('--gx', (px * 100).toFixed(1) + '%'); el.style.setProperty('--gy', (py * 100).toFixed(1) + '%');
+    });
+    el.addEventListener('mouseleave', () => { el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg'); });
+  });
+  document.querySelectorAll('.hero-cta .btn').forEach(b => {
+    b.addEventListener('mousemove', e => {
+      const r = b.getBoundingClientRect();
+      b.style.translate = ((e.clientX - r.left - r.width / 2) * .22) + 'px ' + ((e.clientY - r.top - r.height / 2) * .35) + 'px';
+    });
+    b.addEventListener('mouseleave', () => { b.style.translate = ''; });
+  });
+})();
+
+/* ----- button click ripple ----- */
+document.addEventListener('click', e => {
+  const b = e.target.closest('.btn'); if (!b || reduceMotion) return;
+  const r = b.getBoundingClientRect(), size = Math.max(r.width, r.height) * 2, sp = document.createElement('span');
+  sp.className = 'ripple'; sp.style.cssText = `width:${size}px;height:${size}px;left:${e.clientX - r.left - size / 2}px;top:${e.clientY - r.top - size / 2}px`;
+  b.append(sp); setTimeout(() => sp.remove(), 750);
+});
+
+/* ----- FAQ accordion ----- */
+$('#acc').addEventListener('click', e => {
+  const q = e.target.closest('.q'); if (!q) return;
+  const item = q.parentElement, wasOpen = item.classList.contains('open');
+  document.querySelectorAll('.qa.open').forEach(o => { o.classList.remove('open'); o.querySelector('.q').setAttribute('aria-expanded', 'false'); });
+  if (!wasOpen) { item.classList.add('open'); q.setAttribute('aria-expanded', 'true'); }
+});
+
+/* ----- popup engine (open/close, Esc, focus trap, scroll lock) ----- */
+const Modal = (function () {
+  let active = null, lastFocus = null;
+  function open(el) {
+    if (active && active !== el) close(active, true);
+    clearTimeout(el._t); lastFocus = document.activeElement;
+    el.hidden = false; document.body.classList.add('modal-open'); void el.offsetWidth; el.classList.add('open'); active = el;
+    setTimeout(() => { const f = el.querySelector('.btn,.lb-nav,.m-x'); if (f) f.focus({ preventScroll: true }); }, 60);
+  }
+  function close(el, quick) {
+    if (!el) return;
+    el.classList.remove('open');
+    if (quick) el.hidden = true; else el._t = setTimeout(() => { el.hidden = true; }, 450);
+    if (active === el) { active = null; document.body.classList.remove('modal-open'); if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true }); }
+  }
+  document.addEventListener('click', e => { const c = e.target.closest('[data-close]'); if (c) close(c.closest('.modal')); });
+  document.addEventListener('keydown', e => {
+    if (!active) return;
+    if (e.key === 'Escape') return close(active);
+    if (e.key === 'Tab') {
+      const f = [...active.querySelectorAll('button,[href],input')].filter(x => !x.disabled && x.offsetParent !== null);
+      if (!f.length) return;
+      const first = f[0], lastEl = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); lastEl.focus(); }
+      else if (!e.shiftKey && document.activeElement === lastEl) { e.preventDefault(); first.focus(); }
+    }
+  });
+  return { open, close, get active() { return active; } };
+})();
+
+/* ----- promo codes ----- */
+function applyPromo(raw) {
+  const code = (raw || '').trim().toUpperCase(), msg = $('#promoMsg');
+  if (!code) { state.promo = ''; msg.className = 'full promo-msg bad'; msg.textContent = 'Enter a code first.'; updateSummary(); return false; }
+  if (PROMOS[code]) {
+    state.promo = code; $('#promo').value = code;
+    msg.className = 'full promo-msg good'; msg.textContent = 'Code applied: ' + Math.round(PROMOS[code] * 100) + '% off your booking.';
+    updateSummary(); return true;
+  }
+  state.promo = ''; msg.className = 'full promo-msg bad'; msg.textContent = "That code isn't valid. Check the spelling and try again.";
+  updateSummary(); return false;
+}
+$('#applyPromo').addEventListener('click', () => applyPromo($('#promo').value));
+$('#promo').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); applyPromo($('#promo').value); } });
+$('#again').addEventListener('click', () => { state.promo = ''; const m = $('#promoMsg'); m.textContent = ''; m.className = 'full promo-msg'; updateSummary(); });
+
+/* ----- welcome offer popup (once per visit) ----- */
+(function offer() {
+  const modal = $('#offerModal'); let shown = !!safeStore.get('salon-offer');
+  function show() {
+    if (shown || Modal.active) return;
+    const bk = $('#booking').getBoundingClientRect(); if (bk.top < innerHeight * .6 && bk.bottom > 0) return;
+    shown = true; safeStore.set('salon-offer', '1'); Modal.open(modal);
+  }
+  onReady(() => setTimeout(show, 9000));
+  if (finePointer) document.addEventListener('mouseout', e => { if (!e.relatedTarget && e.clientY <= 0 && document.documentElement.classList.contains('ready')) show(); });
+  $('#copyCode').addEventListener('click', async e => {
+    const b = e.currentTarget;
+    try { await navigator.clipboard.writeText($('#offerCode').textContent); } catch (_) { }
+    b.textContent = 'Copied'; salonToast('Code WELCOME10 copied'); setTimeout(() => { b.textContent = 'Copy'; }, 1600);
+  });
+  $('#claimOffer').addEventListener('click', () => {
+    applyPromo('WELCOME10'); Modal.close(modal);
+    setTimeout(() => $('#booking').scrollIntoView({ behavior: 'smooth' }), 250);
+    salonToast('10% off applied. Choose your service below.');
+  });
+})();
+
+/* ----- package details popup ----- */
+(function pkgDetails() {
+  const INFO = {
+    'p-glow': 'A fresh start for hair and skin in one relaxed visit. Leave with a new cut, glowing skin and perfectly shaped brows.',
+    'p-color': 'Our most requested color service, finished with a deep conditioning treatment and a smooth blowout.',
+    'p-hands': 'The ultimate hands and feet reset: long-lasting gel color, a spa pedicure and a warm paraffin treat.',
+    'p-bride': 'Everything for your big day, including a trial session, so your hair and makeup are exactly how you imagined.'
+  };
+  const modal = $('#pkgModal'), body = $('#pkgBody');
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-pd]'); if (!b) return;
+    const k = PACKAGES.find(x => x.id === b.dataset.pd); if (!k) return;
+    body.innerHTML = `<h3 id="pkgTitle">${k.name}</h3><div class="pm-price">${money(k.p)}</div><div class="pm-meta">${mins(k.m)} · ${k.save}</div><p class="pm-desc">${INFO[k.id] || ''}</p><ul>${k.items.map(i => `<li>${i}</li>`).join('')}</ul><button class="btn" id="pkgBook" type="button">Book this package</button>`;
+    Modal.open(modal);
+    $('#pkgBook').addEventListener('click', () => {
+      state.pkg = k.id; state.svc = new Set(); renderBooking(); updateSummary(); Modal.close(modal);
+      setTimeout(() => $('#booking').scrollIntoView({ behavior: 'smooth' }), 250);
+      salonToast(k.name + ' package added to your booking');
+    });
+  });
+})();
+
+/* ----- toasts when something is added to the booking ----- */
+$('#pkGrid').addEventListener('click', e => { const b = e.target.closest('[data-pk]'); if (b) { const k = PACKAGES.find(x => x.id === b.dataset.pk); salonToast(k.name + ' package added to your booking'); } });
+$('#svcList').addEventListener('click', e => { const b = e.target.closest('[data-b]'); if (b) salonToast(ALL.find(x => x.id === b.dataset.b).name + ' added to your booking'); });
+$('#bPk').addEventListener('click', e => { const b = e.target.closest('[data-pk]'); if (b && state.pkg === b.dataset.pk) salonToast(PACKAGES.find(x => x.id === b.dataset.pk).name + ' package selected'); });
+
+/* ----- gallery lightbox ----- */
+(function lightbox() {
+  const lb = $('#lightbox'), img = $('#lbImg'), cap = $('#lbCap'), items = [...document.querySelectorAll('.gal div')];
+  let idx = 0;
+  function show(i, anim) {
+    idx = (i + items.length) % items.length;
+    const it = items[idx], im = it.querySelector('img');
+    img.src = im.src; img.alt = im.alt; cap.textContent = it.dataset.l + ', ' + (idx + 1) + ' of ' + items.length;
+    if (anim) { img.classList.remove('swap'); void img.offsetWidth; img.classList.add('swap'); }
+    fit();
+  }
+  function fit() {
+    const r = (img.naturalWidth / img.naturalHeight) || 1, w = Math.min(innerWidth * .92, innerHeight * .74 * r, 920);
+    img.style.width = w + 'px'; img.style.height = (w / r) + 'px';
+  }
+  img.addEventListener('load', fit); addEventListener('resize', fit);
+  items.forEach((it, i) => {
+    it.tabIndex = 0; it.setAttribute('role', 'button'); it.setAttribute('aria-label', 'View ' + it.dataset.l);
+    const go = () => { show(i, false); Modal.open(lb); };
+    it.addEventListener('click', go);
+    it.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
+  $('#lbPrev').addEventListener('click', () => show(idx - 1, true));
+  $('#lbNext').addEventListener('click', () => show(idx + 1, true));
+  document.addEventListener('keydown', e => { if (Modal.active !== lb) return; if (e.key === 'ArrowLeft') show(idx - 1, true); if (e.key === 'ArrowRight') show(idx + 1, true); });
+  let sx = 0;
+  lb.addEventListener('touchstart', e => { sx = e.changedTouches[0].clientX; }, { passive: true });
+  lb.addEventListener('touchend', e => { const dx = e.changedTouches[0].clientX - sx; if (Math.abs(dx) > 50) show(idx + (dx < 0 ? 1 : -1), true); }, { passive: true });
 })();
