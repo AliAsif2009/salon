@@ -6,6 +6,10 @@
 <title>SALON | Hair, Skin, Nails &amp; Bridal</title>
 <meta name="description" content="SALON is a full-service beauty salon offering hair, color, skin, nails, makeup and bridal packages. Book your appointment online.">
 <meta name="theme-color" content="#1b1220">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SALON | Hair, Skin, Nails &amp; Bridal">
+<meta property="og:description" content="Hair, color, skin, nails and bridal artistry. Book your appointment online in under two minutes.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"HairSalon","name":"SALON","telephone":"+1-212-555-0142","email":"hello@salon.com","address":{"@type":"PostalAddress","streetAddress":"245 Madison Avenue","addressLocality":"New York","addressRegion":"NY","postalCode":"10016","addressCountry":"US"},"openingHours":["Mo-Fr 09:00-19:00","Sa 09:00-18:00","Su 10:00-16:00"],"priceRange":"$$"}</script>
 <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,6 +38,8 @@
   <div class="intro-count" id="count">001</div>
 </div>
 
+<div class="progress" id="progress" aria-hidden="true"></div>
+
 <header class="nav" id="nav">
   <div class="wrap nav-in">
     <a href="#top" class="brand" aria-label="SALON home"><img src="assets/logo.svg" alt="">SALON</a>
@@ -50,7 +56,9 @@
 </header>
 
 <main id="top">
-  <section class="hero">
+  <section class="hero" id="hero">
+    <div class="orb orb1" aria-hidden="true"></div><div class="orb orb2" aria-hidden="true"></div>
+    <div class="sparkles" id="sparkles" aria-hidden="true"></div>
     <div class="wrap hero-grid">
       <div>
         <h1 class="hz" style="--d:.05s">Look like you. Only more so.</h1>
@@ -60,9 +68,9 @@
           <a href="#packages" class="btn ghost">See packages</a>
         </div>
         <div class="hero-stats hz" style="--d:.5s">
-          <div><b>12+</b><span>Years in business</span></div>
-          <div><b>8,500</b><span>Happy clients</span></div>
-          <div><b>4.9/5</b><span>Average rating</span></div>
+          <div><b data-count="12" data-suffix="+">12+</b><span>Years in business</span></div>
+          <div><b data-count="8500" data-comma="1">8,500</b><span>Happy clients</span></div>
+          <div><b data-count="4.9" data-dec="1" data-suffix="/5">4.9/5</b><span>Average rating</span></div>
         </div>
       </div>
       <div class="hero-art hz" style="--d:.2s" role="img" aria-label="SALON emblem: crossed scissors">
@@ -70,6 +78,19 @@
         <img class="mark" src="assets/logo.svg" alt="">
         <div class="badge">Walk-ins welcome when chairs are free. Booking guarantees yours.</div>
       </div>
+    </div>
+  </section>
+
+  <div class="marquee" aria-hidden="true"><div class="mq-track" id="mq">
+    <span>Hair styling</span><span>Color &amp; balayage</span><span>Facials &amp; skin</span><span>Manicure &amp; pedicure</span><span>Bridal artistry</span><span>Lash &amp; brow</span><span>Keratin smoothing</span>
+  </div></div>
+
+  <section class="feat" id="why">
+    <div class="wrap feat-grid">
+      <div class="ft"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="M8.5 14L7 22l5-3 5 3-1.5-8"/></svg></span><h4>Licensed experts</h4><p>Every stylist is state licensed and trained in the latest techniques.</p></div>
+      <div class="ft"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c0-9 5-14 15-14 0 10-5 15-14 15"/><path d="M5 19c3-5 6-8 10-10"/></svg></span><h4>Premium products</h4><p>Gentle, professional-grade color, skincare and nail brands.</p></div>
+      <div class="ft"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg></span><h4>Hygiene first</h4><p>Sanitized tools and fresh linens for every single guest.</p></div>
+      <div class="ft"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15l2 2 4-4"/></svg></span><h4>Easy booking</h4><p>Reserve online in two minutes and reschedule any time.</p></div>
     </div>
   </section>
 
@@ -127,6 +148,19 @@
     </div>
   </section>
 
+  <section id="faq" class="feat">
+    <div class="wrap faq-wrap">
+      <div class="sec-head"><h2>Good to know</h2><p>Quick answers before your visit. Need more? Call or message us.</p></div>
+      <div class="acc" id="acc">
+        <div class="qa"><button class="q" aria-expanded="false" aria-controls="a1">How do I cancel or reschedule?<span class="pm" aria-hidden="true"></span></button><div class="a" id="a1"><div><p>Change or cancel up to 24 hours before your visit at no charge. Later changes may carry a fee of 50% of the service.</p></div></div></div>
+        <div class="qa"><button class="q" aria-expanded="false" aria-controls="a2">Do you take walk-ins?<span class="pm" aria-hidden="true"></span></button><div class="a" id="a2"><div><p>Yes, when a chair is free. Booking online guarantees your time and your preferred stylist.</p></div></div></div>
+        <div class="qa"><button class="q" aria-expanded="false" aria-controls="a3">Which payment methods do you accept?<span class="pm" aria-hidden="true"></span></button><div class="a" id="a3"><div><p>All major credit cards, Apple Pay, Google Pay and cash. Gratuity is never required but always appreciated.</p></div></div></div>
+        <div class="qa"><button class="q" aria-expanded="false" aria-controls="a4">Do I need a patch test before color?<span class="pm" aria-hidden="true"></span></button><div class="a" id="a4"><div><p>New color guests get a free patch test at least 48 hours before their first appointment. Mention it in your booking notes.</p></div></div></div>
+        <div class="qa"><button class="q" aria-expanded="false" aria-controls="a5">How should I prepare for my visit?<span class="pm" aria-hidden="true"></span></button><div class="a" id="a5"><div><p>Arrive 10 minutes early and bring inspiration photos. For color services, come with clean, dry hair.</p></div></div></div>
+      </div>
+    </div>
+  </section>
+
   <section id="booking" class="dark">
     <div class="wrap">
       <div class="sec-head"><h2>Book online</h2><p>Choose a package or services, pick a time, and we'll confirm by email.</p></div>
@@ -149,6 +183,8 @@
                 <input id="phone" type="tel" placeholder="Phone" autocomplete="tel" required>
                 <input id="email" type="email" class="full" placeholder="Email" autocomplete="email" required>
                 <textarea id="notes" class="full" placeholder="Notes (allergies, inspiration, special requests)"></textarea>
+                <div class="full promo"><input id="promo" placeholder="Promo code (optional)" autocomplete="off" aria-label="Promo code"><button type="button" class="btn sm dk" id="applyPromo">Apply</button></div>
+                <div class="full promo-msg" id="promoMsg" aria-live="polite"></div>
               </div>
             </div>
             <div class="err" id="err" role="alert"></div>
@@ -170,6 +206,7 @@
             <dt>Time</dt><dd id="sTime">-</dd>
             <dt>Duration</dt><dd id="sDur">-</dd>
           </dl>
+          <div class="disc" id="sDiscRow"><span id="sDiscLbl">Discount</span><b id="sDisc">-$0</b></div>
           <div class="tot"><span>Total</span><b id="sTot">$0</b></div>
         </aside>
       </div>
@@ -186,6 +223,42 @@
 </main>
 
 <footer><div class="wrap"><span>&copy; <span id="yr"></span> SALON. All rights reserved.</span><span class="soc"><a href="#">Instagram</a><a href="#">Facebook</a><a href="#">TikTok</a></span></div></footer>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<button class="totop" id="toTop" aria-label="Back to top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></button>
+<a href="#booking" class="m-cta" id="mCta">Book appointment</a>
+
+<!-- Welcome offer popup -->
+<div class="modal" id="offerModal" role="dialog" aria-modal="true" aria-labelledby="offerTitle" hidden>
+  <div class="m-back" data-close></div>
+  <div class="m-card offer">
+    <button class="m-x" data-close aria-label="Close">&times;</button>
+    <div class="offer-art"><span class="ring"></span><img src="assets/logo.svg" alt=""></div>
+    <h3 id="offerTitle">Welcome to SALON</h3>
+    <p>Take 10% off your first visit when you book online.</p>
+    <div class="code"><b id="offerCode">WELCOME10</b><button type="button" id="copyCode">Copy</button></div>
+    <button class="btn" id="claimOffer">Claim and book</button>
+    <button class="m-later" data-close>Maybe later</button>
+  </div>
+</div>
+
+<!-- Package details popup (filled by JS) -->
+<div class="modal" id="pkgModal" role="dialog" aria-modal="true" aria-labelledby="pkgTitle" hidden>
+  <div class="m-back" data-close></div>
+  <div class="m-card pkgm">
+    <button class="m-x" data-close aria-label="Close">&times;</button>
+    <div id="pkgBody"></div>
+  </div>
+</div>
+
+<!-- Gallery lightbox -->
+<div class="modal lb" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer" hidden>
+  <div class="m-back" data-close></div>
+  <button class="m-x" data-close aria-label="Close">&times;</button>
+  <button class="lb-nav prev" id="lbPrev" aria-label="Previous photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+  <figure class="lb-fig"><img id="lbImg" alt=""><figcaption id="lbCap"></figcaption></figure>
+  <button class="lb-nav next" id="lbNext" aria-label="Next photo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+</div>
 
 <script src="js/main.js"></script>
 </body>
