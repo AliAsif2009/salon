@@ -40,11 +40,18 @@ module.exports = async function handler(req, res) {
     appointment_time: d.appointment_time, promo, status: 'pending'
   };
   try {
-    const response = await fetch(`${endpoint}/rest/v1/bookings`, {
-      method:'POST', headers: {
-        apikey: secret, Authorization: `Bearer ${secret}`, 'Content-Type':'application/json', Prefer:'return=minimal'
-      }, body:JSON.stringify(record), signal:AbortSignal.timeout(10000)
-    });
+ 
+const response = await fetch(`${endpoint}/rest/v1/bookings`, {
+  method: 'POST',
+  headers: {
+    apikey: secret,
+    'Content-Type': 'application/json',
+    Prefer: 'return=minimal'
+  },
+  body: JSON.stringify(record),
+  signal: AbortSignal.timeout(10000)
+});
+
     if (!response.ok) { console.error('Supabase insertion failed', response.status, await response.text()); return res.status(502).json({ error:'Could not save booking right now.' }); }
     return res.status(201).json({ ref });
   } catch (e) { console.error('Booking request failed', e); return res.status(502).json({ error:'Booking service temporarily unavailable.' }); }
