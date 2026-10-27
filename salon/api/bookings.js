@@ -4,7 +4,10 @@ const SERVICES = new Set([
   'Signature facial', 'Hydrating facial', 'Chemical peel', 'Waxing (face)',
   'Classic manicure', 'Gel manicure', 'Spa pedicure', 'Acrylic or gel extensions',
   'Event makeup', 'Lash lift & tint', 'Brow shaping & tint',
-  'Brow shaping', 'Deep conditioning', 'Paraffin treat', 'Bridal hair styling', 'Bridal makeup', 'Trial session'
+  'Brow shaping', 'Deep conditioning', 'Paraffin treat', 'Bridal hair styling',
+  'Bridal makeup', 'Trial session', 'Bridal Day package'
+
+
 ]);
 const STYLISTS = new Set(['Any available', 'Amelia Hart', 'Jordan Reyes', 'Sophia Lane', 'Maya Brooks']);
 const PACKAGES = new Set(['p-glow', 'p-color', 'p-hands', 'p-bride']);
