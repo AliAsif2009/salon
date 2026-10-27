@@ -4,10 +4,8 @@ const SERVICES = new Set([
   'Signature facial', 'Hydrating facial', 'Chemical peel', 'Waxing (face)',
   'Classic manicure', 'Gel manicure', 'Spa pedicure', 'Acrylic or gel extensions',
   'Event makeup', 'Lash lift & tint', 'Brow shaping & tint',
-  'Brow shaping', 'Deep conditioning', 'Paraffin treat', 'Bridal hair styling',
-  'Bridal makeup', 'Trial session', 'Bridal Day package'
-
-
+  'Brow shaping', 'Deep conditioning', 'Paraffin treat', 'Bridal hair styling', 'Bridal makeup', 'Trial session',
+  'Glow Up package', 'Color & Care package', 'Hands & Feet package', 'Bridal Day package'
 ]);
 const STYLISTS = new Set(['Any available', 'Amelia Hart', 'Jordan Reyes', 'Sophia Lane', 'Maya Brooks']);
 const PACKAGES = new Set(['p-glow', 'p-color', 'p-hands', 'p-bride']);
@@ -20,7 +18,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'POST') { res.setHeader('Allow','POST'); return res.status(405).json({ error: 'Method not allowed.' }); }
   const endpoint = process.env.SUPABASE_URL?.replace(/\/$/, '');
-  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const secret = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
   if (!endpoint || !secret) return res.status(503).json({ error: 'Booking system is not configured yet.' });
   const d = req.body || {};
   if (JSON.stringify(d).length > 5000) return res.status(413).json({ error: 'Request too large.' });
@@ -40,18 +38,16 @@ module.exports = async function handler(req, res) {
     appointment_time: d.appointment_time, promo, status: 'pending'
   };
   try {
- 
-const response = await fetch(`${endpoint}/rest/v1/bookings`, {
-  method: 'POST',
-  headers: {
-    apikey: secret,
-    'Content-Type': 'application/json',
-    Prefer: 'return=minimal'
-  },
-  body: JSON.stringify(record),
-  signal: AbortSignal.timeout(10000)
-});
-
+    const headers = {
+      apikey: secret,
+      'Content-Type': 'application/json',
+      Prefer: 'return=minimal'
+    };
+    // Supabase sb_secret_* keys go in apikey only. Legacy JWT service_role keys also use Bearer.
+    if (!secret.startsWith('sb_secret_')) headers.Authorization = `Bearer ${secret}`;
+    const response = await fetch(`${endpoint}/rest/v1/bookings`, {
+      method: 'POST', headers, body: JSON.stringify(record), signal: AbortSignal.timeout(10000)
+    });
     if (!response.ok) { console.error('Supabase insertion failed', response.status, await response.text()); return res.status(502).json({ error:'Could not save booking right now.' }); }
     return res.status(201).json({ ref });
   } catch (e) { console.error('Booking request failed', e); return res.status(502).json({ error:'Booking service temporarily unavailable.' }); }
