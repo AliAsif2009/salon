@@ -1,0 +1,9 @@
+SALON database integration (Supabase + Vercel)
+
+1) Create Supabase project at https://supabase.com/dashboard.
+2) Open SQL Editor and execute database.sql.
+3) In Supabase Project Settings find Project URL and server-side service_role key (legacy) or compatible secret service-role key. Never paste secrets into chat, HTML, JS frontend, or GitHub.
+4) In Vercel project > Settings > Environment Variables, set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (Production). Redeploy.
+5) Keep Root Directory set to salon if repo contains outer folder. The api/bookings.js file must be deployed alongside index.html.
+6) Test a booking, then view Supabase Table Editor > bookings. Status starts pending.
+7) Important: confirmation EMAIL is not implemented. Admin bookings view is not implemented. This endpoint does not reserve exclusive time slots and does not prevent duplicate requests. Configure captcha/rate limiting before public launch. Verify salon address, contact info, prices, service list and staff names: they are demo placeholders.

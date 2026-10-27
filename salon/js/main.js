@@ -187,7 +187,7 @@ function updateSummary() {
   $('#sTot').textContent = money(c.p - off);
 }
 
-$('#bookForm').addEventListener('submit', e => {
+$('#bookForm').addEventListener('submit', async e => {
   e.preventDefault();
   const err = $('#err'), c = chosen();
   const name = $('#name').value.trim(), email = $('#email').value.trim(), phone = $('#phone').value.trim();
@@ -197,20 +197,41 @@ $('#bookForm').addEventListener('submit', e => {
   if (!state.time) return fail('Pick a time.');
   if (name.length < 2) return fail('Enter your full name.');
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('Enter a valid email address.');
-  if (phone.replace(/\D/g, '').length < 10) return fail('Enter a 10-digit phone number.');
+  if (phone.replace(/\D/g, '').length < 10) return fail('Enter a valid phone number.');
+  const submit = $('#bookForm').querySelector('button[type="submit"]');
+  submit.disabled = true;
+  const previousText = submit.textContent;
+  submit.textContent = 'Saving booking…';
   err.textContent = '';
-
-  const ref = 'SLN-' + Math.random().toString(36).slice(2, 7).toUpperCase();
-  const booking = { ref, ...c, staff: state.staff, promo: state.promo || '', date: state.date, time: state.time, name, email, phone, notes: $('#notes').value.trim() };
-  // TODO: send `booking` to your backend / email service / booking API here.
-  try { const all = JSON.parse(localStorage.getItem('salon-bookings') || '[]'); all.push(booking); localStorage.setItem('salon-bookings', JSON.stringify(all)); } catch (_) { }
-
-  $('#bookForm').style.display = 'none';
-  const ok = $('#ok'); ok.style.display = 'block';
-  $('#okMsg').textContent = `Thanks, ${name.split(' ')[0]}. Your ${c.names.join(', ')} appointment is set for ${$('#sDate').textContent} at ${state.time}. A confirmation will be sent to ${email}. Reference: ${ref}.`;
-  ok.focus(); ok.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  if (window.salonConfetti) salonConfetti();
-  if (window.salonToast) salonToast('Booking confirmed. Reference ' + ref);
+  try {
+    const response = await fetch('/api/bookings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        package_id: state.pkg || null,
+        services: c.names,
+        stylist: state.staff,
+        appointment_date: state.date,
+        appointment_time: state.time,
+        name, email, phone,
+        notes: $('#notes').value.trim(),
+        promo: state.promo || ''
+      })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || 'Booking could not be saved. Please try again.');
+    $('#bookForm').style.display = 'none';
+    const ok = $('#ok'); ok.style.display = 'block';
+    $('#okMsg').textContent = `Thanks, ${name.split(' ')[0]}. Your ${c.names.join(', ')} booking request for ${$('#sDate').textContent} at ${state.time} has been received. Reference: ${result.ref}. Please contact the salon to confirm your appointment.`;
+    ok.focus(); ok.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (window.salonConfetti) salonConfetti();
+    if (window.salonToast) salonToast('Booking request received. Reference ' + result.ref);
+  } catch (error) {
+    fail(error.message || 'Unable to save booking. Please try again.');
+  } finally {
+    submit.disabled = false;
+    submit.textContent = previousText;
+  }
 });
 $('#again').addEventListener('click', () => {
   Object.assign(state, { pkg: null, svc: new Set(), staff: STAFF[0], date: '', time: '' });
