@@ -249,6 +249,55 @@ module.exports = async function handler(req, res) {
       });
     }
 
+    // Send a notification after the booking is saved.
+    const resendKey = process.env.RESEND_API_KEY;
+    const emailFrom = process.env.EMAIL_FROM;
+    const notifyEmail = process.env.SALON_NOTIFICATION_EMAIL;
+
+    if (resendKey && emailFrom && notifyEmail) {
+      try {
+        const emailResponse = await fetch(
+          'https://api.resend.com/emails',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${resendKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              from: emailFrom,
+              to: [notifyEmail],
+              subject: `New Salon Booking - ${ref}`,
+              text: [
+                'New booking request received.',
+                `Reference: ${ref}`,
+                `Customer: ${name}`,
+                `Email: ${email}`,
+                `Phone: ${phone}`,
+                `Services: ${services.join(', ')}`,
+                `Stylist: ${stylist}`,
+                `Date: ${date}`,
+                `Time: ${time}`,
+                `Duration: ${durationMinutes} minutes`,
+                'Status: Pending'
+              ].join('\n')
+            }),
+            signal: AbortSignal.timeout(8000)
+          }
+        );
+
+        if (!emailResponse.ok) {
+          console.error(
+            'Booking email failed:',
+            emailResponse.status,
+            await emailResponse.text()
+          );
+        }
+      } catch (emailError) {
+        console.error('Booking email error:', emailError);
+      }
+    }
+
     return res.status(201).json({
       ref,
       duration_minutes: durationMinutes

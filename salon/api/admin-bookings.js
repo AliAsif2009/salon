@@ -23,12 +23,145 @@ module.exports = async function handler(req, res) {
       if (!r.ok) {console.error('Admin list Supabase error:',r.status,await r.text()); return res.status(502).json({error:'Could not load bookings'});}
       return res.status(200).json({bookings:await r.json()});
     }
-    const {id, status} = req.body || {};
-    if (!Number.isSafeInteger(id) || id <= 0 || !STATUS.has(status)) return res.status(400).json({error:'Invalid booking update'});
-    const r = await fetch(`${url}/rest/v1/bookings?id=eq.${id}`, {method:'PATCH', headers:{...headers,Prefer:'return=representation'},body:JSON.stringify({status}),signal:AbortSignal.timeout(10000)});
-    if (!r.ok) {console.error('Admin update Supabase error:',r.status,await r.text());return res.status(502).json({error:'Could not update booking'});}
+   
+    const { id, status } = req.body || {};
+
+    if (!Number.isSafeInteger(id) || id <= 0 || !STATUS.has(status)) {
+      return res.status(400).json({
+        error: 'Invalid booking update'
+      });
+    }
+
+    // Read the existing status before updating.
+    const existingResponse = await fetch(
+      `${url}/rest/v1/bookings?id=eq.${id}&select=id,reference,name,email,services,stylist,appointment_date,appointment_time,status`,
+      {
+        headers,
+        signal: AbortSignal.timeout(10000)
+      }
+    );
+
+    if (!existingResponse.ok) {
+      return res.status(502).json({
+        error: 'Could not check booking'
+      });
+    }
+
+    const existingRows = await existingResponse.json();
+    const existing = existingRows[0];
+
+    if (!existing) {
+      return res.status(404).json({
+        error: 'Booking not found'
+      });
+    }
+
+    // Skip an update when the status is unchanged.
+    if (existing.status === status) {
+      return res.status(200).json({
+        booking: existing,
+        unchanged: true
+      });
+    }
+
+    // Update only if the previous status still matches.
+    const updateParams = new URLSearchParams({
+      id: `eq.${id}`,
+      status: `eq.${existing.status}`
+    });
+
+    const r = await fetch(
+      `${url}/rest/v1/bookings?${updateParams}`,
+      {
+        method: 'PATCH',
+        headers: {
+          ...headers,
+          Prefer: 'return=representation'
+        },
+        body: JSON.stringify({ status }),
+        signal: AbortSignal.timeout(10000)
+      }
+    );
+
+    if (!r.ok) {
+      console.error(
+        'Admin update Supabase error:',
+        r.status,
+        await r.text()
+      );
+
+      return res.status(502).json({
+        error: 'Could not update booking'
+      });
+    }
+
     const updated = await r.json();
-    if (!updated.length) return res.status(404).json({error:'Booking not found'});
-    return res.status(200).json({booking:updated[0]});
+
+    if (!updated.length) {
+      return res.status(409).json({
+        error: 'Booking was changed. Please refresh.'
+      });
+    }
+
+    const booking = updated[0];
+
+    // Send test notification for confirmed/cancelled bookings.
+    if (['confirmed', 'cancelled'].includes(status)) {
+      const resendKey = process.env.RESEND_API_KEY;
+      const from = process.env.EMAIL_FROM;
+      const testRecipient = process.env.SALON_NOTIFICATION_EMAIL;
+
+      if (resendKey && from && testRecipient) {
+        try {
+          const subject = status === 'confirmed'
+            ? `Salon Booking Confirmed - ${booking.reference}`
+            : `Salon Booking Cancelled - ${booking.reference}`;
+
+          const emailResponse = await fetch(
+            'https://api.resend.com/emails',
+            {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${resendKey}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                from,
+                to: [testRecipient],
+                subject,
+                text: [
+                  `Booking status: ${status.toUpperCase()}`,
+                  `Reference: ${booking.reference}`,
+                  `Customer: ${booking.name}`,
+                  `Customer Email: ${booking.email}`,
+                  `Service: ${(booking.services || []).join(', ')}`,
+                  `Stylist: ${booking.stylist}`,
+                  `Date: ${booking.appointment_date}`,
+                  `Time: ${booking.appointment_time}`
+                ].join('\n')
+              }),
+              signal: AbortSignal.timeout(8000)
+            }
+          );
+
+          if (!emailResponse.ok) {
+            console.error(
+              'Admin notification failed:',
+              emailResponse.status,
+              await emailResponse.text()
+            );
+          }
+        } catch (emailError) {
+          console.error(
+            'Admin email error:',
+            emailError
+          );
+        }
+      }
+    }
+
+    return res.status(200).json({
+      booking
+    });
   } catch (err) {console.error('Admin API failed:',err);return res.status(502).json({error:'Booking service temporarily unavailable'});}
 };
