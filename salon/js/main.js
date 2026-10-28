@@ -33,7 +33,8 @@ const PACKAGES = [
   { id: 'p-bride', name: 'Bridal Day', p: 480, m: 270, items: ['Bridal hair styling', 'Bridal makeup', 'Gel manicure', 'Trial session'], svc: ['blow', 'mu', 'gel'], save: 'Includes trial' }
 ];
 const PROMOS = { WELCOME10: 0.10 }; // add more codes here, e.g. SUMMER15: 0.15
-const STAFF = ['Any available', 'Amelia Hart', 'Jordan Reyes', 'Sophia Lane', 'Maya Brooks'];
+
+const STAFF = ['Amelia Hart', 'Jordan Reyes', 'Sophia Lane', 'Maya Brooks'];
 const ALL = Object.values(SERVICES).flat();
 const $ = (s, r = document) => r.querySelector(s);
 const money = n => '$' + n.toLocaleString('en-US');
@@ -90,7 +91,11 @@ $('#tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); 
 $('#svcList').addEventListener('click', e => {
   const b = e.target.closest('[data-b]'); if (!b) return;
   state.pkg = null; state.svc = new Set([b.dataset.b]);
-  renderBooking(); updateSummary();
+
+state.time = '';
+renderBooking();
+slotsFor(state.date);
+updateSummary();
   $('#booking').scrollIntoView({ behavior: 'smooth' });
 });
 
@@ -107,7 +112,11 @@ $('#pkGrid').innerHTML = PACKAGES.map(k => `
 $('#pkGrid').addEventListener('click', e => {
   const b = e.target.closest('[data-pk]'); if (!b) return;
   state.pkg = b.dataset.pk; state.svc = new Set();
-  renderBooking(); updateSummary();
+
+state.time = '';
+renderBooking();
+slotsFor(state.date);
+updateSummary();
   $('#booking').scrollIntoView({ behavior: 'smooth' });
 });
 
@@ -124,46 +133,143 @@ function renderBooking() {
 $('#bPk').addEventListener('click', e => {
   const b = e.target.closest('[data-pk]'); if (!b) return;
   state.pkg = state.pkg === b.dataset.pk ? null : b.dataset.pk; state.svc = new Set();
-  renderBooking(); updateSummary();
+
+state.time = ''; renderBooking(); slotsFor(state.date); updateSummary();
 });
 $('#bSvc').addEventListener('click', e => {
   const b = e.target.closest('[data-s]'); if (!b) return;
   state.pkg = null;
   state.svc.has(b.dataset.s) ? state.svc.delete(b.dataset.s) : state.svc.add(b.dataset.s);
-  renderBooking(); updateSummary();
+
+state.time = ''; renderBooking(); slotsFor(state.date); updateSummary();
 });
+
 $('#bSt').addEventListener('click', e => {
-  const b = e.target.closest('[data-st]'); if (!b) return;
-  state.staff = b.dataset.st; state.time = ''; renderBooking(); updateSummary();
+  const b = e.target.closest('[data-st]');
+  if (!b) return;
+
+  state.staff = b.dataset.st;
+  state.time = '';
+  renderBooking();
+  slotsFor(state.date);
+  updateSummary();
 });
+
 
 const dateEl = $('#date');
 const iso = d => new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
 dateEl.min = iso(new Date());
-dateEl.addEventListener('change', () => { state.date = dateEl.value; state.time = ''; renderTimes(); updateSummary(); });
 
-// Demo availability: deterministic "booked" slots. Replace with a real backend call.
-function slotsFor(dateStr) {
-  const d = new Date(dateStr + 'T12:00:00'), dow = d.getDay();
-  const open = dow === 0 ? 10 : 9, close = dow === 0 ? 16 : dow === 6 ? 18 : 19;
-  const out = [];
-  for (let h = open; h < close; h++) for (const m of [0, 30]) {
-    if (h === close - 1 && m === 30) continue;
-    out.push({ h, m });
+dateEl.addEventListener('change', () => {
+  state.date = dateEl.value;
+  state.time = '';
+  slotsFor(state.date);
+  updateSummary();
+});
+
+
+let liveSlots = [];
+let availabilityLoading = false;
+let availabilityRequestId = 0;
+
+async function slotsFor(dateStr) {
+  const requestId = ++availabilityRequestId;
+  const duration = chosen().m;
+
+  if (!dateStr || !duration || state.staff === 'Any available') {
+    liveSlots = [];
+    availabilityLoading = false;
+    renderTimes();
+    return;
   }
-  const seed = [...(dateStr + state.staff)].reduce((a, c) => a + c.charCodeAt(0), 0);
-  return out.map((s, i) => ({ ...s, taken: (seed * (i + 3)) % 7 === 0 }));
+
+  availabilityLoading = true;
+  liveSlots = [];
+  renderTimes();
+
+  try {
+    const params = new URLSearchParams({
+      date: dateStr,
+      stylist: state.staff,
+      duration: String(duration)
+    });
+
+    const response = await fetch(
+      `/api/availability?${params.toString()}`,
+      { cache: 'no-store' }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Availability unavailable');
+    }
+
+    if (requestId !== availabilityRequestId) return;
+
+    liveSlots = data.slots || [];
+  } catch (error) {
+    if (requestId !== availabilityRequestId) return;
+
+    liveSlots = [];
+    console.error('Availability check failed:', error);
+  } finally {
+    if (requestId === availabilityRequestId) {
+      availabilityLoading = false;
+      renderTimes();
+    }
+  }
 }
+
 const fmt = ({ h, m }) => `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+
 function renderTimes() {
   const box = $('#bTime');
-  if (!state.date) { box.innerHTML = ''; $('#dateNote').textContent = ''; $('#dateNote').style.color = '#8f8296'; $('#dateNote').textContent = 'Pick a date to see available times.'; return; }
-  $('#dateNote').textContent = '';
-  box.innerHTML = slotsFor(state.date).map(s => {
-    const t = fmt(s);
-    return `<button type="button" class="chip" data-t="${t}" ${s.taken ? 'disabled' : ''} aria-pressed="${state.time === t}">${t}</button>`;
-  }).join('');
+  const note = $('#dateNote');
+
+  if (!state.date) {
+    box.innerHTML = '';
+    note.textContent = 'Pick a date to see available times.';
+    return;
+  }
+
+  if (!chosen().m) {
+    box.innerHTML = '';
+    note.textContent = 'Choose a service or package first.';
+    return;
+  }
+
+  if (state.staff === 'Any available') {
+    box.innerHTML = '';
+    note.textContent = 'Please select a specific stylist.';
+    return;
+  }
+
+  if (availabilityLoading) {
+    box.innerHTML = '';
+    note.textContent = 'Checking available appointments...';
+    return;
+  }
+
+  if (!liveSlots.length) {
+    box.innerHTML = '';
+    note.textContent = 'No availability loaded. Change the date to check again.';
+    return;
+  }
+
+  note.textContent = 'Available appointment times:';
+
+  box.innerHTML = liveSlots.map(slot => `
+    <button
+      type="button"
+      class="chip"
+      data-t="${slot.time}"
+      ${!slot.available ? 'disabled' : ''}
+      aria-pressed="${state.time === slot.time}"
+    >${slot.time}</button>
+  `).join('');
 }
+
 $('#bTime').addEventListener('click', e => {
   const b = e.target.closest('[data-t]'); if (!b || b.disabled) return;
   state.time = b.dataset.t; renderTimes(); updateSummary();
@@ -194,7 +300,20 @@ $('#bookForm').addEventListener('submit', async e => {
   const fail = m => { err.textContent = m; };
   if (!c.names.length) return fail('Choose a package or at least one service.');
   if (!state.date) return fail('Pick a date.');
-  if (!state.time) return fail('Pick a time.');
+
+if (!state.time) return fail('Pick a time.');
+
+if (
+  availabilityLoading ||
+  !liveSlots.some(slot =>
+    slot.time === state.time && slot.available
+  )
+) {
+  state.time = '';
+  renderTimes();
+  updateSummary();
+  return fail('This time is no longer available. Please select another time.');
+}
   if (name.length < 2) return fail('Enter your full name.');
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return fail('Enter a valid email address.');
   if (phone.replace(/\D/g, '').length < 10) return fail('Enter a valid phone number.');
@@ -204,6 +323,39 @@ $('#bookForm').addEventListener('submit', async e => {
   submit.textContent = 'Saving booking…';
   err.textContent = '';
   try {
+    
+const checkParams = new URLSearchParams({
+  date: state.date,
+  stylist: state.staff,
+  duration: String(c.m)
+});
+
+const availabilityResponse = await fetch(
+  `/api/availability?${checkParams.toString()}`,
+  { cache: 'no-store' }
+);
+
+if (!availabilityResponse.ok) {
+  throw new Error('Could not verify availability. Please try again.');
+}
+
+const freshAvailability = await availabilityResponse.json();
+
+const selectedSlot = freshAvailability.slots?.find(
+  slot => slot.time === state.time
+);
+
+if (!selectedSlot?.available) {
+  state.time = '';
+  liveSlots = freshAvailability.slots || [];
+  renderTimes();
+  updateSummary();
+
+  throw new Error(
+    'This appointment time is no longer available. Please choose another time.'
+  );
+}
+
     const response = await fetch('/api/bookings', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -505,7 +657,9 @@ $('#again').addEventListener('click', () => { state.promo = ''; const m = $('#pr
     body.innerHTML = `<h3 id="pkgTitle">${k.name}</h3><div class="pm-price">${money(k.p)}</div><div class="pm-meta">${mins(k.m)} · ${k.save}</div><p class="pm-desc">${INFO[k.id] || ''}</p><ul>${k.items.map(i => `<li>${i}</li>`).join('')}</ul><button class="btn" id="pkgBook" type="button">Book this package</button>`;
     Modal.open(modal);
     $('#pkgBook').addEventListener('click', () => {
-      state.pkg = k.id; state.svc = new Set(); renderBooking(); updateSummary(); Modal.close(modal);
+     
+state.pkg = k.id; state.svc = new Set(); state.time = ''; renderBooking(); slotsFor(state.date); updateSummary(); Modal.close(modal);
+
       setTimeout(() => $('#booking').scrollIntoView({ behavior: 'smooth' }), 250);
       salonToast(k.name + ' package added to your booking');
     });
