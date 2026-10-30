@@ -102,11 +102,50 @@ module.exports = async function handler(req, res) {
     const opening = day === 0 ? 10 : 9;
     const closing = day === 0 ? 16 : day === 6 ? 18 : 19;
 
+   
     const slots = [];
 
-    for (let start = opening * 60;
-         start + minutes <= closing * 60;
-         start += 30) {
+    const now = new Date();
+
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Karachi',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23'
+    }).formatToParts(now);
+
+    const getPart = type =>
+      parts.find(part => part.type === type)?.value;
+
+    const today = [
+      getPart('year'),
+      getPart('month'),
+      getPart('day')
+    ].join('-');
+
+    const currentMinutes =
+      Number(getPart('hour')) * 60 +
+      Number(getPart('minute'));
+
+    if (date < today) {
+      return res.status(200).json({
+        date,
+        stylist,
+        duration_minutes: minutes,
+        slots: []
+      });
+    }
+
+    for (
+      let start = opening * 60;
+      start + minutes <= closing * 60;
+      start += 30
+    ) {
+      const isPast =
+        date === today && start <= currentMinutes;
 
       const taken = bookings.some(booking => {
         const bookedStart = Number(booking.start_minute);
@@ -126,7 +165,7 @@ module.exports = async function handler(req, res) {
 
       slots.push({
         time: formatTime(start),
-        available: !taken
+        available: !isPast && !taken
       });
     }
 

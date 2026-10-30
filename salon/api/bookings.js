@@ -181,6 +181,61 @@ module.exports = async function handler(req, res) {
     });
   }
 
+
+  // Check salon date, current time and opening hours
+  const nowParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Karachi',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
+  }).formatToParts(new Date());
+
+  const part = type =>
+    nowParts.find(p => p.type === type)?.value;
+
+  const today = [
+    part('year'),
+    part('month'),
+    part('day')
+  ].join('-');
+
+  const currentMinutes =
+    Number(part('hour')) * 60 +
+    Number(part('minute'));
+
+  if (
+    date < today ||
+    (date === today && startMinute <= currentMinutes)
+  ) {
+    return res.status(400).json({
+      error: 'Cannot book a past date or time.'
+    });
+  }
+
+  const [year, month, dayOfMonth] = date.split('-').map(Number);
+
+  const dayOfWeek = new Date(
+    Date.UTC(year, month - 1, dayOfMonth)
+  ).getUTCDay();
+
+  const opening = dayOfWeek === 0 ? 10 : 9;
+  const closing = dayOfWeek === 0 ? 16 : dayOfWeek === 6 ? 18 : 19;
+
+  if (
+    !Number.isFinite(startMinute) ||
+    startMinute < opening * 60 ||
+    startMinute + durationMinutes > closing * 60 ||
+    startMinute % 30 !== 0
+  ) {
+    return res.status(400).json({
+      error: 'Please select a valid appointment within salon hours.'
+    });
+  }
+
+
   const ref = 'SLN-' + randomUUID().slice(0, 8).toUpperCase();
 
   const record = {
