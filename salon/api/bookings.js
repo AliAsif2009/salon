@@ -36,21 +36,39 @@ const STYLISTS = new Set([
   'Maya Brooks'
 ]);
 
+
 function validDate(value) {
-  if (typeof value !== 'string' ||
-      !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  if (
+    typeof value !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(value)
+  ) return false;
 
   const date = new Date(value + 'T00:00:00Z');
 
-  return !Number.isNaN(date.getTime()) &&
-    date.toISOString().slice(0, 10) === value &&
-    value >= new Date().toLocaleDateString('en-CA', {
-      timeZone: 'Asia/Karachi',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit'
-    }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$1-$2');
+  if (
+    Number.isNaN(date.getTime()) ||
+    date.toISOString().slice(0, 10) !== value
+  ) return false;
+
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Karachi',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).formatToParts(new Date());
+
+  const getPart = type =>
+    parts.find(p => p.type === type)?.value;
+
+  const today = [
+    getPart('year'),
+    getPart('month'),
+    getPart('day')
+  ].join('-');
+
+  return value >= today;
 }
+
 
 function timeToMinutes(value) {
   if (typeof value !== 'string') return null;
